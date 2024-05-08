@@ -121,8 +121,14 @@ stop() {
   echo "Killing ${service} with PID ${pid}."
   kill -${signal} ${pid}
   if ! stop_await ${service} ${service_pidfile} ${counts} ${period}; then
-    echo "Timed out waiting ${service} to stop, check logs for more details."
-    return 1
+    if [[ ${graceful} == true ]]; then
+      kill -SIGKILL ${pid}
+      echo "Timed out waiting ${service} to graceful shutdown."
+      return 0
+    else
+      echo "Timed out waiting ${service} to stop, check logs for more details."
+      return 1
+    fi
   fi
 }
 
