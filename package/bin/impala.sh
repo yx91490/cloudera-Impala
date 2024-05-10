@@ -84,21 +84,25 @@ stop_await() {
 }
 
 stop() {
-  local service= counts=20 period=2 signal=SIGTERM force=false graceful=false
+  local service= counts=20 period=2 signal=SIGTERM force=false graceful=false counts_flag=false
   while [[ $# -gt 0 ]]; do
     case ${1} in
       -c) counts=${2} && shift 2 ;;
       -p) period=${2} && shift 2 ;;
       -f) signal=SIGKILL && force=true && shift 1 ;;
-      -g) signal=SIGRTMIN && graceful=true && shift 1 ;;
+      -g) signal=SIGRTMIN && graceful=true && counts_flag=true && shift 1 ;;
       impalad|catalogd|admissiond|statestored) service=${1} && shift && break ;;
       *) usage && exit 1 ;;
     esac
   done
   check_counts ${counts} ${period}
   [[ ${service} != "" ]] || (usage && exit 1)
-  if [[ ${force} == true && ${graceful} == true ]]; then
-    echo "Cannot use '-f' and '-g' together."
+  if [[ ${graceful} == true && ${force} == true ]]; then
+    echo "Cannot use '-g' and '-f' together."
+    exit 1
+  fi
+  if [[ ${graceful} == true && ${counts_flag} == false ]]; then
+    echo "Must use '-g' with '-c' together."
     exit 1
   fi
   if [[ ${graceful} == true && ${service} != impalad ]]; then
